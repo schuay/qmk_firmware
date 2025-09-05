@@ -1,0 +1,28 @@
+{
+  "development_board": "promicro_rp2040",
+  "encoder": {
+    "rotary": [
+      {"pin_a": "GP6", "pin_b": "GP7", "resolution": 4}
+    ]
+  },
+  "matrix_pins": {
+    "cols": ["GP20", "GP22", "GP26", "GP27", "GP28", "GP29"],
+    "rows": ["GP2", "GP3", "GP4", "GP5"]
+  },
+  "split": {
+    "encoder": {
+      "right": {
+        "rotary": [
+          {"pin_a": "GP7", "pin_b": "GP6", "resolution": 4}
+        ]
+      }
+    },
+    "serial": {
+      "driver": "vendor",
+      "pin": "GP1"
+    },
+    "handedness": {
+      "pin": "GP0"
+    }
+  }
+}

@@ -119,5 +119,6 @@ extern const uint16_t encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS];
 // "Custom encoder lite" support
 void encoder_driver_init(void);
 void encoder_driver_task(void);
+void encoder_clear_state(void);
 
 #endif // ENCODER_ENABLE

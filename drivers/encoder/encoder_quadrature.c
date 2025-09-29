@@ -211,3 +211,8 @@ __attribute__((weak)) void encoder_driver_task(void) {
         encoder_quadrature_handle_read(i, encoder_quadrature_read_pin(i, false), encoder_quadrature_read_pin(i, true));
     }
 }
+
+void encoder_clear_state(void) {
+    memset(encoder_state, 0, sizeof(encoder_state));
+    memset(encoder_pulses, 0, sizeof(encoder_pulses));
+}

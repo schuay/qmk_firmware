@@ -31,7 +31,7 @@ MASTER_OUTPUT := $(firstword $(OUTPUTS))
 FORMAT = ihex
 
 # Optimization level, can be [0, 1, 2, 3, s].
-OPT ?= s
+OPT ?= 2
 
 # Compiler flag to set the C and C++ language standard level
 CSTANDARD = -std=gnu11

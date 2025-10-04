@@ -208,7 +208,21 @@ void encoder_quadrature_handle_read(uint8_t index, uint8_t pin_a_state, uint8_t 
 
 __attribute__((weak)) void encoder_driver_task(void) {
     for (uint8_t i = 0; i < thisCount; i++) {
-        encoder_quadrature_handle_read(i, encoder_quadrature_read_pin(i, false), encoder_quadrature_read_pin(i, true));
+        pin_t pin_a = encoders_pad_a[i];
+        pin_t pin_b = encoders_pad_b[i];
+        uint8_t pin_a_state, pin_b_state;
+        if (PAL_PORT(pin_a) == PAL_PORT(pin_b)) {
+            // Read both pins at the same time if they are on the same port.
+            ioportmask_t port_state = palReadPort(PAL_PORT(pin_a));
+            pin_a_state = (port_state >> PAL_PAD(pin_a)) & 1;
+            pin_b_state = (port_state >> PAL_PAD(pin_b)) & 1;
+        } else {
+            // Fallback to reading pins separately if they are on different ports.
+            // This is not ideal as there is a small window for a race condition.
+            pin_a_state = palReadLine(pin_a);
+            pin_b_state = palReadLine(pin_b);
+        }
+        encoder_quadrature_handle_read(i, pin_a_state, pin_b_state);
     }
 }
 

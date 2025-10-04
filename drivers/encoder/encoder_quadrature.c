@@ -3,12 +3,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <stdint.h>
+#include <stdlib.h>
 #include "encoder.h"
 #include "gpio.h"
 #include "keyboard.h"
 #include "action.h"
 #include "keycodes.h"
 #include "wait.h"
+
+#include "quantum/logging/print.h"
+#include "quantum/logging/debug.h"
 
 #ifdef SPLIT_KEYBOARD
 #    include "split_util.h"
@@ -31,6 +35,8 @@ extern volatile bool isLeftHand;
 
 __attribute__((weak)) void    encoder_quadrature_init_pin(uint8_t index, bool pad_b);
 __attribute__((weak)) uint8_t encoder_quadrature_read_pin(uint8_t index, bool pad_b);
+
+static int32_t last_encoder_count = 0;
 
 #ifdef ENCODER_DEFAULT_PIN_API_IMPL
 
@@ -69,7 +75,7 @@ static uint8_t encoder_resolutions[NUM_ENCODERS] = ENCODER_RESOLUTIONS;
 #    define ENCODER_CLOCKWISE false
 #    define ENCODER_COUNTER_CLOCKWISE true
 #endif
-static int8_t encoder_LUT[] = {0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0};
+// static int8_t encoder_LUT[] = {0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0};
 
 static uint8_t encoder_state[NUM_ENCODERS]  = {0};
 static int8_t  encoder_pulses[NUM_ENCODERS] = {0};
@@ -102,6 +108,13 @@ void encoder_quadrature_post_init(void) {
 #else
     memset(encoder_state, 0, sizeof(encoder_state));
 #endif
+
+    extern void pio_encoder_init(pin_t pin_base);
+    if (abs(encoders_pad_a[0] - encoders_pad_b[0]) != 1) {
+      uprintf("encoder pins must be consecutive for pio\n");
+      return;
+    }
+    pio_encoder_init(encoders_pad_a[0]);
 
     encoder_quadrature_post_init_kb();
 }
@@ -158,7 +171,7 @@ void encoder_driver_init(void) {
     encoder_quadrature_post_init();
 }
 
-static void encoder_handle_state_change(uint8_t index, uint8_t state) {
+static void encoder_handle_state_change(uint8_t index, uint8_t state, int32_t encoder_count) {
     uint8_t i = index;
 
 #ifdef SPLIT_KEYBOARD
@@ -171,24 +184,30 @@ static void encoder_handle_state_change(uint8_t index, uint8_t state) {
     const uint8_t resolution = ENCODER_RESOLUTION;
 #endif
 
-    encoder_pulses[i] += encoder_LUT[state & 0xF];
+    int32_t encoder_count_delta = encoder_count - last_encoder_count;
+    last_encoder_count = encoder_count;
+    encoder_pulses[i] += encoder_count_delta;
+    dprintf("encoder_pulses %d delta %d\n", (int)encoder_pulses[i], (int)encoder_count_delta);
 
 #ifdef ENCODER_DEFAULT_POS
     if ((encoder_pulses[i] >= resolution) || (encoder_pulses[i] <= -resolution) || ((state & 0x3) == ENCODER_DEFAULT_POS)) {
-        if (encoder_pulses[i] >= 1) {
+      while (encoder_pulses[i] >= 1) {
 #else
-    if (encoder_pulses[i] >= resolution) {
+      while (encoder_pulses[i] >= resolution) {
 #endif
-
             encoder_queue_event(index, ENCODER_COUNTER_CLOCKWISE);
+            encoder_pulses[i] = MAX(0, encoder_pulses[i] - resolution);
+            wait_ms(5);
         }
 
 #ifdef ENCODER_DEFAULT_POS
-        if (encoder_pulses[i] <= -1) {
+      while (encoder_pulses[i] <= -1) {
 #else
-    if (encoder_pulses[i] <= -resolution) { // direction is arbitrary here, but this clockwise
+      while (encoder_pulses[i] <= -resolution) {
 #endif
             encoder_queue_event(index, ENCODER_CLOCKWISE);
+            encoder_pulses[i] = MIN(0, encoder_pulses[i] + resolution);
+            wait_ms(5);
         }
         encoder_pulses[i] %= resolution;
 #ifdef ENCODER_DEFAULT_POS
@@ -199,10 +218,17 @@ static void encoder_handle_state_change(uint8_t index, uint8_t state) {
 
 void encoder_quadrature_handle_read(uint8_t index, uint8_t pin_a_state, uint8_t pin_b_state) {
     uint8_t state = pin_a_state | (pin_b_state << 1);
-    if ((encoder_state[index] & 0x3) != state) {
+        extern int32_t quadrature_encoder_get_count2(void);
+    int32_t encoder_count = 
+      encoders_pad_a[index] < encoders_pad_b[index]
+      ? quadrature_encoder_get_count2()
+      : -quadrature_encoder_get_count2();
+    if (encoder_count != last_encoder_count) {
+        // uprintf("count %d\n", (int)encoder_count);
+
         encoder_state[index] <<= 2;
         encoder_state[index] |= state;
-        encoder_handle_state_change(index, encoder_state[index]);
+        encoder_handle_state_change(index, encoder_state[index], encoder_count);
     }
 }
 

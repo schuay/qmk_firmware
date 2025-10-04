@@ -929,6 +929,8 @@ ifeq ($(strip $(ENCODER_ENABLE)), yes)
         SRC += encoder_$(strip $(ENCODER_DRIVER)).c
     endif
 
+    SRC += pio_encoder.c
+
     ifeq ($(strip $(ENCODER_MAP_ENABLE)), yes)
         OPT_DEFS += -DENCODER_MAP_ENABLE
     endif

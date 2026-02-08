@@ -19,7 +19,7 @@
                  "KC_LGUI", "KC_SPC", "KC_TRNS", "MO(3)", "KC_ENT", "KC_RALT"
     ], 
     [
-        "KC_EXLM", "KC_AT", "KC_HASH", "KC_DLR", "KC_NO", "KC_PERC", "KC_CIRC", "KC_AMPR", "KC_ASTR", "KC_LPRN", "KC_RPRN", 
+        "KC_EXLM", "KC_AT", "KC_HASH", "KC_DLR", "KC_PERC", "KC_NO", "KC_CIRC", "KC_AMPR", "KC_ASTR", "KC_LPRN", "KC_RPRN", 
         "KC_NO", "KC_NO", "KC_NO", "KC_NO", "KC_NO", "KC_MINS", "KC_EQL", "KC_LBRC", "KC_RBRC", "KC_BSLS", 
         "KC_NO", "KC_NO", "KC_NO", "KC_NO", "KC_NO", "KC_UNDS", "KC_PLUS", "KC_LCBR", "KC_RCBR", "KC_PIPE", 
                  "KC_LGUI", "KC_SPC", "MO(3)", "KC_TRNS", "KC_ENT", "KC_RALT"

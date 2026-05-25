@@ -103,8 +103,12 @@ void via_eeprom_set_valid(bool valid) {
 // the caller also needs to check the valid state.
 __attribute__((weak)) void via_init_kb(void) {}
 
+static bool via_raw_hid_handle(uint8_t *data, uint8_t length);
+
 // Called by QMK core to initialize dynamic keymaps etc.
 void via_init(void) {
+    raw_hid_register_handler(via_raw_hid_handle);
+
     // Let keyboard level test EEPROM valid state,
     // but not set it valid, it is done here.
     via_init_kb();
@@ -287,16 +291,25 @@ __attribute__((weak)) bool via_command_kb(uint8_t *data, uint8_t length) {
     return false;
 }
 
-void raw_hid_receive(uint8_t *data, uint8_t length) {
+// Registered with raw_hid_register_handler() during via_init().
+//
+// Returns true if the top-level command is in VIA's known set (the
+// packet has been handled, including any raw_hid_send reply, even
+// when an inner subcommand was unrecognized and id_unhandled was
+// echoed back). Returns false for any other top-level command id,
+// leaving the buffer untouched so the next handler in the chain
+// can claim it.
+static bool via_raw_hid_handle(uint8_t *data, uint8_t length) {
     uint8_t *command_id   = &(data[0]);
     uint8_t *command_data = &(data[1]);
 
     // If via_command_kb() returns true, the command was fully
     // handled, including calling raw_hid_send()
     if (via_command_kb(data, length)) {
-        return;
+        return true;
     }
 
+    bool recognized = true;
     switch (*command_id) {
         case id_get_protocol_version: {
             command_data[0] = VIA_PROTOCOL_VERSION >> 8;
@@ -469,16 +482,21 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
         }
 #endif
         default: {
-            // The command ID is not known
-            // Return the unhandled state
-            *command_id = id_unhandled;
+            // Top-level command ID is not one of VIA's; let other
+            // registered raw_hid handlers process this packet.
+            recognized = false;
             break;
         }
+    }
+
+    if (!recognized) {
+        return false;
     }
 
     // Return the same buffer, optionally with values changed
     // (i.e. returning state to the host, or the unhandled state).
     raw_hid_send(data, length);
+    return true;
 }
 
 #if defined(BACKLIGHT_ENABLE)

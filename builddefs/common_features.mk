@@ -642,6 +642,23 @@ ifeq ($(strip $(VIA_ENABLE)), yes)
     endif
 endif
 
+ifeq ($(strip $(RAW_HID_MOUSE_ENABLE)), yes)
+    ifneq ($(strip $(MOUSE_MAP_ENABLE)), yes)
+        $(call CATASTROPHIC_ERROR,Invalid feature combination,RAW_HID_MOUSE_ENABLE requires MOUSE_MAP_ENABLE)
+    endif
+    OPT_DEFS += -DRAW_HID_MOUSE_ENABLE
+    # Motion deltas on the FRAME wire are int16; mouse_xy_report_t is int8
+    # unless MOUSE_EXTENDED_REPORT is defined, so without this a fast cursor
+    # flick truncates (dx=200 wraps to -56 and the host sees teleport
+    # rather than the spec-promised clip). Force it on. The trailing `=`
+    # matches the bare `#define MOUSE_EXTENDED_REPORT` form used in
+    # keyboard config.h files, so we don't trip -Werror=macro-redefined
+    # against a keyboard that already opted in.
+    OPT_DEFS += -DMOUSE_EXTENDED_REPORT=
+    RAW_ENABLE := yes
+    SRC += $(QUANTUM_DIR)/raw_hid_mouse.c
+endif
+
 ifeq ($(strip $(RAW_ENABLE)), yes)
     OPT_DEFS += -DRAW_ENABLE
     SRC += raw_hid.c
@@ -945,6 +962,11 @@ ifeq ($(strip $(DIP_SWITCH_ENABLE)), yes)
     ifeq ($(strip $(DIP_SWITCH_MAP_ENABLE)), yes)
         OPT_DEFS += -DDIP_SWITCH_MAP_ENABLE
     endif
+endif
+
+ifeq ($(strip $(MOUSE_MAP_ENABLE)), yes)
+    OPT_DEFS += -DMOUSE_MAP_ENABLE
+    SRC += $(QUANTUM_DIR)/mouse_map_default.c
 endif
 
 ifeq ($(strip $(BATTERY_ENABLE)), yes)

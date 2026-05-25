@@ -31,7 +31,13 @@ uint8_t hex_digit_to_keycode(uint8_t digit) {
 }
 } // namespace
 
-TestDriver::TestDriver() : m_driver{&TestDriver::keyboard_leds, &TestDriver::send_keyboard, &TestDriver::send_nkro, &TestDriver::send_mouse, &TestDriver::send_extra} {
+TestDriver::TestDriver()
+    : m_driver{
+          &TestDriver::keyboard_leds, &TestDriver::send_keyboard, &TestDriver::send_nkro, &TestDriver::send_mouse, &TestDriver::send_extra,
+#ifdef RAW_ENABLE
+          &TestDriver::send_raw_hid,
+#endif
+      } {
     host_set_driver(&m_driver);
     m_this = this;
 }
@@ -61,6 +67,12 @@ void TestDriver::send_mouse(report_mouse_t* report) {
 void TestDriver::send_extra(report_extra_t* report) {
     m_this->send_extra_mock(*report);
 }
+
+#ifdef RAW_ENABLE
+void TestDriver::send_raw_hid(uint8_t* data, uint8_t length) {
+    m_this->send_raw_hid_mock(data, length);
+}
+#endif
 
 namespace internal {
 void expect_unicode_code_point(TestDriver& driver, uint32_t code_point) {

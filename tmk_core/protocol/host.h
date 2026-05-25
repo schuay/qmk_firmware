@@ -49,6 +49,16 @@ void    host_raw_hid_send(uint8_t *data, uint8_t length);
 uint16_t host_last_system_usage(void);
 uint16_t host_last_consumer_usage(void);
 
+/* Buttons field of the most recent report passed to host_mouse_send().
+ * Source-agnostic: reflects whatever mousekey, pointing_device, or any
+ * other emitter most recently put on the wire. Stamp this into motion
+ * reports emitted from outside mousekey/pointing_device (e.g. a Raw HID
+ * mouse bridge) to keep click-and-drag intact -- USB HID mouse reports
+ * carry the full state on every transfer, so a motion report with
+ * buttons=0 would silently release any held button on the host.
+ */
+uint8_t host_get_mouse_buttons(void);
+
 #ifdef __cplusplus
 }
 #endif

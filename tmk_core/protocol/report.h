@@ -57,6 +57,19 @@ enum mouse_buttons {
     MOUSE_BTN8 = MOUSE_BTN_MASK(7)
 };
 
+/* Number of buttons exposed by QMK's mouse HID descriptor (Button 1..Button 8). */
+#define MOUSE_BUTTON_COUNT 8
+
+/* Mouse wheel directions, used as the col index of MOUSE_WHEEL_EVENTs and
+ * the second dimension of mouse_wheelmap. */
+enum mouse_wheel_direction {
+    MOUSE_WHEEL_UP    = 0,
+    MOUSE_WHEEL_DOWN  = 1,
+    MOUSE_WHEEL_LEFT  = 2,
+    MOUSE_WHEEL_RIGHT = 3,
+    NUM_MOUSE_WHEEL_DIRECTIONS,
+};
+
 /* Consumer Page (0x0C)
  *
  * See https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf#page=75

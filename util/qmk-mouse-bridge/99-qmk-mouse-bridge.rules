@@ -1,0 +1,35 @@
+# udev rules for the QMK Raw HID mouse-bridge daemon.
+#
+# Install with:
+#   sudo install -Dm755 qmk-rawhid-check.sh /usr/local/lib/qmk-mouse-bridge/qmk-rawhid-check.sh
+#   sudo install -Dm644 99-qmk-mouse-bridge.rules /etc/udev/rules.d/99-qmk-mouse-bridge.rules
+#   sudo udevadm control --reload
+#   sudo udevadm trigger --subsystem-match=input --subsystem-match=hidraw
+#
+# Mouse and keyboard nodes plugged AFTER reload pick up the new rules.
+
+# Mouse input devices: TAG+="uaccess" so the active logind session gets a
+# per-user ACL. Generic; works for any USB or Bluetooth mouse.
+SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_MOUSE}=="1", TAG+="uaccess"
+
+# /dev/uinput: needed by no-motion mode (default) so the daemon can
+# create a virtual pointing device that re-injects REL_X/REL_Y back
+# into libinput. static_node= forces the node to exist at boot even
+# if the uinput module is autoloaded lazily.
+KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput"
+
+# QMK Raw HID interface, on any QMK keyboard. Discovery key matches the daemon's:
+# the HID report descriptor's Usage Page (0xFF60) + Usage (0x61). The helper
+# script reads the kernel-exposed report_descriptor sysfs file and prints
+# QMK_RAW_HID=1 only when those bytes are present. Skip on `remove` because
+# the descriptor is no longer readable.
+ACTION!="remove", SUBSYSTEM=="hidraw", KERNEL=="hidraw*", \
+    IMPORT{program}="/usr/local/lib/qmk-mouse-bridge/qmk-rawhid-check.sh /sys$devpath/device/report_descriptor"
+
+# Matching nodes get:
+#   * TAG+="uaccess": per-user ACL via logind when the keyboard is on a
+#     seat (covers the common case: USB plugged into a port logind owns).
+#   * MODE+GROUP: fallback for headless / multi-seat / non-seat0 ports.
+#     The daemon's user must be a member of `input` for this to take effect.
+SUBSYSTEM=="hidraw", KERNEL=="hidraw*", ENV{QMK_RAW_HID}=="1", \
+    TAG+="uaccess", MODE="0660", GROUP="input"

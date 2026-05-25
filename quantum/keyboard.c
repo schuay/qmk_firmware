@@ -102,6 +102,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef ST7565_ENABLE
 #    include "st7565.h"
 #endif
+#ifdef RAW_HID_MOUSE_ENABLE
+#    include "raw_hid_mouse.h"
+#endif
 #ifdef VIA_ENABLE
 #    include "via.h"
 #endif
@@ -458,6 +461,9 @@ void quantum_init(void) {
 void keyboard_init(void) {
     timer_init();
     sync_timer_init();
+#ifdef RAW_HID_MOUSE_ENABLE
+    raw_hid_mouse_init();
+#endif
 #ifdef VIA_ENABLE
     via_init();
 #endif

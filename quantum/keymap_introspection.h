@@ -48,6 +48,33 @@ uint16_t keycode_at_dip_switch_map_location(uint8_t switch_idx, bool on);
 #endif // defined(DIP_SWITCH_ENABLE) && defined(DIP_SWITCH_MAP_ENABLE)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Mouse mapping
+
+#if defined(MOUSE_MAP_ENABLE)
+
+// Get the number of layers defined in the mouse-button map, stored in firmware rather than any other persistent storage
+uint8_t mouse_buttonmap_layer_count_raw(void);
+// Get the number of layers defined in the mouse-button map, potentially stored dynamically
+uint8_t mouse_buttonmap_layer_count(void);
+
+// Get the keycode for the mouse-button mapping location, stored in firmware rather than any other persistent storage
+uint16_t keycode_at_mouse_buttonmap_location_raw(uint8_t layer_num, uint8_t button_idx);
+// Get the keycode for the mouse-button mapping location, potentially stored dynamically
+uint16_t keycode_at_mouse_buttonmap_location(uint8_t layer_num, uint8_t button_idx);
+
+// Get the number of layers defined in the mouse-wheel map, stored in firmware rather than any other persistent storage
+uint8_t mouse_wheelmap_layer_count_raw(void);
+// Get the number of layers defined in the mouse-wheel map, potentially stored dynamically
+uint8_t mouse_wheelmap_layer_count(void);
+
+// Get the keycode for the mouse-wheel mapping location, stored in firmware rather than any other persistent storage
+uint16_t keycode_at_mouse_wheelmap_location_raw(uint8_t layer_num, uint8_t direction);
+// Get the keycode for the mouse-wheel mapping location, potentially stored dynamically
+uint16_t keycode_at_mouse_wheelmap_location(uint8_t layer_num, uint8_t direction);
+
+#endif // defined(MOUSE_MAP_ENABLE)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Combos
 
 #if defined(COMBO_ENABLE)

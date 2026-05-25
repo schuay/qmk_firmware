@@ -1,0 +1,31 @@
+[Unit]
+Description=QMK mouse-to-RawHID bridge (for any keyboard built with RAW_HID_MOUSE_ENABLE)
+Documentation=https://github.com/qmk/qmk_firmware/tree/master/util/qmk-mouse-bridge
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/qmk-mouse-bridge
+Restart=on-failure
+RestartSec=2s
+TimeoutStopSec=5s
+KillMode=mixed
+# Drop privileges and lock the filesystem down even though we are already
+# unprivileged: the bridge only needs to read input devices and write to the
+# keyboard's hidraw node.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=default.target

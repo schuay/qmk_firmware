@@ -947,6 +947,11 @@ ifeq ($(strip $(DIP_SWITCH_ENABLE)), yes)
     endif
 endif
 
+ifeq ($(strip $(MOUSE_MAP_ENABLE)), yes)
+    OPT_DEFS += -DMOUSE_MAP_ENABLE
+    SRC += $(QUANTUM_DIR)/mouse_map_default.c
+endif
+
 ifeq ($(strip $(BATTERY_ENABLE)), yes)
     BATTERY_DRIVER_REQUIRED := yes
 endif

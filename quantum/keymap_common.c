@@ -213,6 +213,13 @@ __attribute__((weak)) uint16_t keymap_key_to_keycode(uint8_t layer, keypos_t key
         return keycode_at_dip_switch_map_location(key.col, false);
     }
 #endif // DIP_SWITCH_MAP_ENABLE
+#ifdef MOUSE_MAP_ENABLE
+    else if (key.row == KEYLOC_MOUSE_BUTTON && key.col < MOUSE_BUTTON_COUNT) {
+        return keycode_at_mouse_buttonmap_location(layer, key.col);
+    } else if (key.row == KEYLOC_MOUSE_WHEEL && key.col < NUM_MOUSE_WHEEL_DIRECTIONS) {
+        return keycode_at_mouse_wheelmap_location(layer, key.col);
+    }
+#endif // MOUSE_MAP_ENABLE
 
     return KC_NO;
 }

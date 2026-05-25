@@ -96,6 +96,58 @@ __attribute__((weak)) uint16_t keycode_at_dip_switch_map_location(uint8_t switch
 #endif // defined(DIP_SWITCH_ENABLE) && defined(DIP_SWITCH_MAP_ENABLE)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Mouse mapping
+
+#if defined(MOUSE_MAP_ENABLE)
+
+// User-supplied mouse_buttonmap / mouse_wheelmap are optional. The lookup
+// helpers live in quantum/mouse_map_default.c -- that TU does not see the
+// keymap's strong definition, so the weak symbol stays opaque to the
+// compiler and the runtime null-check resolves correctly regardless of LTO.
+extern uint16_t mouse_buttonmap_lookup_or_default(uint8_t layer_num, uint8_t button_idx);
+extern uint16_t mouse_wheelmap_lookup_or_default(uint8_t layer_num, uint8_t direction);
+
+uint8_t mouse_buttonmap_layer_count_raw(void) {
+    return NUM_KEYMAP_LAYERS_RAW;
+}
+
+__attribute__((weak)) uint8_t mouse_buttonmap_layer_count(void) {
+    return mouse_buttonmap_layer_count_raw();
+}
+
+uint16_t keycode_at_mouse_buttonmap_location_raw(uint8_t layer_num, uint8_t button_idx) {
+    if (layer_num >= NUM_KEYMAP_LAYERS_RAW || button_idx >= MOUSE_BUTTON_COUNT) {
+        return KC_TRNS;
+    }
+    return mouse_buttonmap_lookup_or_default(layer_num, button_idx);
+}
+
+__attribute__((weak)) uint16_t keycode_at_mouse_buttonmap_location(uint8_t layer_num, uint8_t button_idx) {
+    return keycode_at_mouse_buttonmap_location_raw(layer_num, button_idx);
+}
+
+uint8_t mouse_wheelmap_layer_count_raw(void) {
+    return NUM_KEYMAP_LAYERS_RAW;
+}
+
+__attribute__((weak)) uint8_t mouse_wheelmap_layer_count(void) {
+    return mouse_wheelmap_layer_count_raw();
+}
+
+uint16_t keycode_at_mouse_wheelmap_location_raw(uint8_t layer_num, uint8_t direction) {
+    if (layer_num >= NUM_KEYMAP_LAYERS_RAW || direction >= NUM_MOUSE_WHEEL_DIRECTIONS) {
+        return KC_TRNS;
+    }
+    return mouse_wheelmap_lookup_or_default(layer_num, direction);
+}
+
+__attribute__((weak)) uint16_t keycode_at_mouse_wheelmap_location(uint8_t layer_num, uint8_t direction) {
+    return keycode_at_mouse_wheelmap_location_raw(layer_num, direction);
+}
+
+#endif // defined(MOUSE_MAP_ENABLE)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Combos
 
 #if defined(COMBO_ENABLE)

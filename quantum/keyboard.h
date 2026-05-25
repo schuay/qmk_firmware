@@ -32,7 +32,7 @@ typedef struct {
     uint8_t row;
 } keypos_t;
 
-typedef enum keyevent_type_t { TICK_EVENT = 0, KEY_EVENT = 1, ENCODER_CW_EVENT = 2, ENCODER_CCW_EVENT = 3, COMBO_EVENT = 4, DIP_SWITCH_ON_EVENT = 5, DIP_SWITCH_OFF_EVENT = 6 } keyevent_type_t;
+typedef enum keyevent_type_t { TICK_EVENT = 0, KEY_EVENT = 1, ENCODER_CW_EVENT = 2, ENCODER_CCW_EVENT = 3, COMBO_EVENT = 4, DIP_SWITCH_ON_EVENT = 5, DIP_SWITCH_OFF_EVENT = 6, MOUSE_BUTTON_EVENT = 7, MOUSE_WHEEL_EVENT = 8 } keyevent_type_t;
 
 /* key event */
 typedef struct {
@@ -50,6 +50,8 @@ typedef struct {
 #define KEYLOC_ENCODER_CCW 252
 #define KEYLOC_DIP_SWITCH_ON 251
 #define KEYLOC_DIP_SWITCH_OFF 250
+#define KEYLOC_MOUSE_BUTTON 249
+#define KEYLOC_MOUSE_WHEEL 248
 
 static inline bool IS_NOEVENT(const keyevent_t event) {
     return event.type == TICK_EVENT;
@@ -69,12 +71,24 @@ static inline bool IS_ENCODEREVENT(const keyevent_t event) {
 static inline bool IS_DIPSWITCHEVENT(const keyevent_t event) {
     return event.type == DIP_SWITCH_ON_EVENT || event.type == DIP_SWITCH_OFF_EVENT;
 }
+static inline bool IS_MOUSE_BUTTON_EVENT(const keyevent_t event) {
+    return event.type == MOUSE_BUTTON_EVENT;
+}
+static inline bool IS_MOUSE_WHEEL_EVENT(const keyevent_t event) {
+    return event.type == MOUSE_WHEEL_EVENT;
+}
+static inline bool IS_MOUSEEVENT(const keyevent_t event) {
+    return IS_MOUSE_BUTTON_EVENT(event) || IS_MOUSE_WHEEL_EVENT(event);
+}
 
-/* Common keypos_t object factory */
-#define MAKE_KEYPOS(row_num, col_num) ((keypos_t){.row = (row_num), .col = (col_num)})
+/* Common keypos_t object factory. Designated initializers in struct
+ * declaration order so the macro is usable from C++ (which rejects
+ * out-of-order designators with a hard error in C++20). */
+#define MAKE_KEYPOS(row_num, col_num) ((keypos_t){.col = (col_num), .row = (row_num)})
 
-/* Common keyevent_t object factory */
-#define MAKE_EVENT(row_num, col_num, press, event_type) ((keyevent_t){.key = MAKE_KEYPOS((row_num), (col_num)), .pressed = (press), .time = timer_read(), .type = (event_type)})
+/* Common keyevent_t object factory. Designated initializers in struct
+ * declaration order for C++ compatibility. */
+#define MAKE_EVENT(row_num, col_num, press, event_type) ((keyevent_t){.key = MAKE_KEYPOS((row_num), (col_num)), .time = timer_read(), .type = (event_type), .pressed = (press)})
 
 /**
  * @brief Constructs a key event for a pressed or released key.
@@ -102,6 +116,53 @@ static inline bool IS_DIPSWITCHEVENT(const keyevent_t event) {
 #    define MAKE_DIPSWITCH_ON_EVENT(switch_id, press) MAKE_EVENT(KEYLOC_DIP_SWITCH_ON, (switch_id), (press), DIP_SWITCH_ON_EVENT)
 #    define MAKE_DIPSWITCH_OFF_EVENT(switch_id, press) MAKE_EVENT(KEYLOC_DIP_SWITCH_OFF, (switch_id), (press), DIP_SWITCH_OFF_EVENT)
 #endif // DIP_SWITCH_MAP_ENABLE
+
+#ifdef MOUSE_MAP_ENABLE
+/* Mouse events.
+ *
+ * The two factory macros below synthesize a keyevent that flows through
+ * QMK's normal action pipeline (action_exec -> process_record_quantum ->
+ * keymap_key_to_keycode). Hosts of external mouse activity -- a Raw HID
+ * dispatcher, a pointing-device button handler, a foot-pedal sensor --
+ * call these to inject button/wheel events into the keymap-level dispatch
+ * via `mouse_buttonmap` / `mouse_wheelmap`.
+ *
+ *   btn_id: 0..7, indexing the eight buttons QMK's mouse HID descriptor
+ *           already exposes (Button 1..Button 8, matching the kernel evdev
+ *           codes BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA,
+ *           BTN_FORWARD, BTN_BACK, BTN_TASK).
+ *   dir:    one of MOUSE_WHEEL_UP, MOUSE_WHEEL_DOWN, MOUSE_WHEEL_LEFT,
+ *           MOUSE_WHEEL_RIGHT (0..3); see report.h.
+ */
+#    define MAKE_MOUSE_BUTTON_EVENT(btn_id, press) MAKE_EVENT(KEYLOC_MOUSE_BUTTON, (btn_id), (press), MOUSE_BUTTON_EVENT)
+#    define MAKE_MOUSE_WHEEL_EVENT(dir, press) MAKE_EVENT(KEYLOC_MOUSE_WHEEL, (dir), (press), MOUSE_WHEEL_EVENT)
+
+/* Identity-passthrough initializer lists for one row of mouse_buttonmap
+ * or mouse_wheelmap. Use these to give a layer "act like a normal mouse"
+ * behavior without spelling out every keycode:
+ *
+ *     const uint16_t PROGMEM mouse_buttonmap[][MOUSE_BUTTON_COUNT] = {
+ *         [BASE]    = DEFAULT_MOUSE_BUTTONMAP,
+ *         [GAMING]  = {KC_Q, KC_W, ...},
+ *         [BROWSER] = DEFAULT_MOUSE_BUTTONMAP,
+ *     };
+ *
+ * Or for "every layer is identity," with a NUM_LAYERS sentinel:
+ *
+ *     const uint16_t PROGMEM mouse_buttonmap[][MOUSE_BUTTON_COUNT] = {
+ *         [0 ... NUM_LAYERS-1] = DEFAULT_MOUSE_BUTTONMAP,
+ *     };
+ *     const uint16_t PROGMEM mouse_wheelmap[][NUM_MOUSE_WHEEL_DIRECTIONS] = {
+ *         [0 ... NUM_LAYERS-1] = DEFAULT_MOUSE_WHEELMAP,
+ *     };
+ *
+ * QK_MOUSE_BUTTON_*  / QK_MOUSE_WHEEL_*  come from quantum/keycodes.h,
+ * pulled in by QMK_KEYBOARD_H.
+ */
+#    define DEFAULT_MOUSE_BUTTONMAP {QK_MOUSE_BUTTON_1, QK_MOUSE_BUTTON_2, QK_MOUSE_BUTTON_3, QK_MOUSE_BUTTON_4, QK_MOUSE_BUTTON_5, QK_MOUSE_BUTTON_6, QK_MOUSE_BUTTON_7, QK_MOUSE_BUTTON_8}
+
+#    define DEFAULT_MOUSE_WHEELMAP {QK_MOUSE_WHEEL_UP, QK_MOUSE_WHEEL_DOWN, QK_MOUSE_WHEEL_LEFT, QK_MOUSE_WHEEL_RIGHT}
+#endif // MOUSE_MAP_ENABLE
 
 /* it runs once at early stage of startup before keyboard_init. */
 void keyboard_setup(void);

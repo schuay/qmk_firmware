@@ -23,6 +23,7 @@ extern "C" {
 #include "debug.h"
 #include "eeconfig.h"
 #include "keyboard.h"
+#include "keymap_introspection.h"
 
 void set_time(uint32_t t);
 void advance_time(uint32_t ms);
@@ -148,6 +149,22 @@ const KeymapKey* TestFixture::find_key(layer_t layer, keypos_t position) const {
 }
 
 void TestFixture::get_keycode(const layer_t layer, const keypos_t position, uint16_t* result) const {
+    /* Mouse-map dispatch: KEYLOC_MOUSE_* positions are populated by static
+     * PROGMEM `mouse_buttonmap` / `mouse_wheelmap` arrays in the test's
+     * keymap file. Delegate to the introspection helpers so tests exercise
+     * the production dispatch path rather than the fixture's per-test
+     * `set_keymap` machinery. */
+#if defined(MOUSE_MAP_ENABLE)
+    if (position.row == KEYLOC_MOUSE_BUTTON) {
+        *result = keycode_at_mouse_buttonmap_location(layer, position.col);
+        return;
+    }
+    if (position.row == KEYLOC_MOUSE_WHEEL) {
+        *result = keycode_at_mouse_wheelmap_location(layer, position.col);
+        return;
+    }
+#endif
+
     bool key_is_out_of_bounds = position.col >= MATRIX_COLS && position.row >= MATRIX_ROWS;
 
     if (key_is_out_of_bounds) {

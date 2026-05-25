@@ -4,6 +4,7 @@
 #include "keyboard.h"
 #include "action.h"
 #include "encoder.h"
+#include "report.h"
 #include "util.h"
 #include "action_layer.h"
 
@@ -243,6 +244,10 @@ uint8_t source_layers_cache[((MATRIX_ROWS * MATRIX_COLS) + (CHAR_BIT)-1) / (CHAR
 #    ifdef ENCODER_MAP_ENABLE
 uint8_t encoder_source_layers_cache[(NUM_ENCODERS + (CHAR_BIT)-1) / (CHAR_BIT)][MAX_LAYER_BITS] = {{0}};
 #    endif // ENCODER_MAP_ENABLE
+#    ifdef MOUSE_MAP_ENABLE
+uint8_t mouse_button_source_layers_cache[(MOUSE_BUTTON_COUNT + (CHAR_BIT)-1) / (CHAR_BIT)][MAX_LAYER_BITS]        = {{0}};
+uint8_t mouse_wheel_source_layers_cache[(NUM_MOUSE_WHEEL_DIRECTIONS + (CHAR_BIT)-1) / (CHAR_BIT)][MAX_LAYER_BITS] = {{0}};
+#    endif // MOUSE_MAP_ENABLE
 
 /** \brief update source layers cache impl
  *
@@ -287,6 +292,13 @@ void update_source_layers_cache(keypos_t key, uint8_t layer) {
         update_source_layers_cache_impl(layer, entry_number, encoder_source_layers_cache);
     }
 #    endif // ENCODER_MAP_ENABLE
+#    ifdef MOUSE_MAP_ENABLE
+    else if (key.row == KEYLOC_MOUSE_BUTTON && key.col < MOUSE_BUTTON_COUNT) {
+        update_source_layers_cache_impl(layer, key.col, mouse_button_source_layers_cache);
+    } else if (key.row == KEYLOC_MOUSE_WHEEL && key.col < NUM_MOUSE_WHEEL_DIRECTIONS) {
+        update_source_layers_cache_impl(layer, key.col, mouse_wheel_source_layers_cache);
+    }
+#    endif // MOUSE_MAP_ENABLE
 }
 
 /** \brief read source layers cache
@@ -304,6 +316,13 @@ uint8_t read_source_layers_cache(keypos_t key) {
         return read_source_layers_cache_impl(entry_number, encoder_source_layers_cache);
     }
 #    endif // ENCODER_MAP_ENABLE
+#    ifdef MOUSE_MAP_ENABLE
+    else if (key.row == KEYLOC_MOUSE_BUTTON && key.col < MOUSE_BUTTON_COUNT) {
+        return read_source_layers_cache_impl(key.col, mouse_button_source_layers_cache);
+    } else if (key.row == KEYLOC_MOUSE_WHEEL && key.col < NUM_MOUSE_WHEEL_DIRECTIONS) {
+        return read_source_layers_cache_impl(key.col, mouse_wheel_source_layers_cache);
+    }
+#    endif // MOUSE_MAP_ENABLE
     return 0;
 }
 #endif
